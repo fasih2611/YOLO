@@ -1,0 +1,186 @@
+---Baseline---
+- INFO - Average Preprocessing Time per image (640x640): 0.0126 seconds
+- INFO - Average Preprocessing Time per image (256x256): 0.0056 seconds
+Comparison Results:
+2024-09-13 18:41:29,149 - INFO - 640x640 Images:
+2024-09-13 18:41:29,150 - INFO - pytorch_cpu: Inference Time = 0.1518 s ± 0.0163 s,
+Post-processing Time = 0.0004 s, Throughput = 6.59 images/s
+
+2024-09-13 18:41:29,151 - INFO - onnx: Inference Time = 0.1219 s ± 0.0124 s,
+Post-processing Time = 0.0015 s, Throughput = 8.20 images/s
+
+2024-09-13 18:41:29,151 - INFO - deepsparse: Inference Time = 0.0691 s ± 0.0093 s,
+Post-processing Time = 0.0011 s, Throughput = 14.47 images/s
+
+2024-09-13 18:41:29,152 - INFO - ultralytics: Inference Time = 0.1557 s ± 0.0253 s,
+Post-processing Time = 0.0009 s, Throughput = 6.42 images/s
+
+2024-09-13 18:41:29,152 - INFO - ultralytics_onnx: Inference Time = 0.1269 s ± 0.0145 s,
+Post-processing Time = 0.0017 s, Throughput = 7.88 images/s
+
+2024-09-13 18:41:29,153 - INFO - ultralytics_deepsparse: Inference Time = 0.0700 s ± 0.0102 s,
+Post-processing Time = 0.0011 s, Throughput = 14.29 images/s
+
+
+256x256 Images:
+2024-09-13 18:41:29,153 - INFO - pytorch_cpu: Inference Time = 0.0424 s ± 0.0086 s,
+Post-processing Time = 0.0002 s, Throughput = 23.59 images/s
+
+2024-09-13 18:41:29,153 - INFO - onnx: Inference Time = 0.0223 s ± 0.0048 s,
+Post-processing Time = 0.0023 s, Throughput = 44.84 images/s
+
+2024-09-13 18:41:29,153 - INFO - deepsparse: Inference Time = 0.0188 s ± 0.0063 s,
+Post-processing Time = 0.0009 s, Throughput = 53.27 images/s
+
+2024-09-13 18:41:29,153 - INFO - ultralytics: Inference Time = 0.0408 s ± 0.0083 s,
+Post-processing Time = 0.0003 s, Throughput = 24.51 images/s
+
+2024-09-13 18:41:29,153 - INFO -     ultralytics_onnx: Inference Time = 0.0220 s ± 0.0052 s,
+Post-processing Time = 0.0024 s, Throughput = 45.47 images/s
+
+2024-09-13 18:41:29,153 - INFO - ultralytics_deepsparse: Inference Time = 0.0186 s ± 0.0065 s,
+Post-processing Time = 0.0008 s, Throughput = 53.66 images/s- INFO - - INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0109 seconds
+- INFO - 
+Running comparisons for 256x256 images:
+- INFO - Average Preprocessing Time per image (256x256): 0.0056 seconds
+- INFO - ---Compiled---
+- INFO - 
+Comparison Results:
+- INFO - 640x640 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.1305 s ± 0.0165 s,
+Post-processing Time = 0.0005 s, Throughput = 7.66 images/s
+
+- INFO - 
+onnx: Inference Time = 0.1374 s ± 0.0170 s,
+Post-processing Time = 0.0013 s, Throughput = 7.28 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0698 s ± 0.0095 s,
+Post-processing Time = 0.0010 s, Throughput = 14.33 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.1514 s ± 0.0133 s,
+Post-processing Time = 0.0009 s, Throughput = 6.61 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.1338 s ± 0.0157 s,
+Post-processing Time = 0.0014 s, Throughput = 7.47 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0699 s ± 0.0096 s,
+Post-processing Time = 0.0011 s, Throughput = 14.30 images/s
+
+- INFO - 
+256x256 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.0385 s ± 0.0086 s,
+Post-processing Time = 0.0002 s, Throughput = 25.95 images/s
+
+- INFO - 
+onnx: Inference Time = 0.0209 s ± 0.0047 s,
+Post-processing Time = 0.0022 s, Throughput = 47.74 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0176 s ± 0.0065 s,
+Post-processing Time = 0.0007 s, Throughput = 56.72 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.0400 s ± 0.0081 s,
+Post-processing Time = 0.0003 s, Throughput = 24.98 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.0210 s ± 0.0045 s,
+Post-processing Time = 0.0023 s, Throughput = 47.67 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0177 s ± 0.0061 s,
+Post-processing Time = 0.0007 s, Throughput = 56.60 images/s
+
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0163 seconds
+- INFO - 
+Running comparisons for 256x256 images:
+- INFO - Average Preprocessing Time per image (256x256): 0.0055 seconds
+- INFO - ---Compiled---
+- INFO - 
+Comparison Results:
+- INFO - 640x640 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.1286 s ± 0.0151 s,
+Post-processing Time = 0.0005 s, Throughput = 7.77 images/s
+
+- INFO - 
+onnx: Inference Time = 0.1479 s ± 0.0164 s,
+Post-processing Time = 0.0014 s, Throughput = 6.76 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0720 s ± 0.0109 s,
+Post-processing Time = 0.0011 s, Throughput = 13.89 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.1539 s ± 0.0154 s,
+Post-processing Time = 0.0009 s, Throughput = 6.50 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.1633 s ± 0.0190 s,
+Post-processing Time = 0.0014 s, Throughput = 6.12 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0723 s ± 0.0109 s,
+Post-processing Time = 0.0012 s, Throughput = 13.82 images/s
+
+- INFO - 
+256x256 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.0382 s ± 0.0078 s,
+Post-processing Time = 0.0002 s, Throughput = 26.16 images/s
+
+- INFO - 
+onnx: Inference Time = 0.0276 s ± 0.0068 s,
+Post-processing Time = 0.0035 s, Throughput = 36.23 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0259 s ± 0.0126 s,
+Post-processing Time = 0.0018 s, Throughput = 38.60 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.0466 s ± 0.0152 s,
+Post-processing Time = 0.0004 s, Throughput = 21.45 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.0297 s ± 0.0071 s,
+Post-processing Time = 0.0045 s, Throughput = 33.64 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0220 s ± 0.0077 s,
+Post-processing Time = 0.0010 s, Throughput = 45.41 images/s
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0108 seconds
+- INFO - 
+Running comparisons for 256x256 images:
+- INFO - Average Preprocessing Time per image (256x256): 0.0049 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0119 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0122 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0110 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0108 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0106 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0113 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0124 seconds
