@@ -14,9 +14,10 @@ import logging
 from statistics import mean, stdev
 torch.set_float32_matmul_precision('high')
 sys.path.append('./YOLOv8-test')
-from nets import nn
-from utils.util import non_max_suppression
-
+from nets import nn # type: ignore
+from utils.util import non_max_suppression # type: ignore 
+from torch.nn.utils import prune
+import copy
 global batch_size, class_no
 batch_size = 1
 class_no = 80
@@ -31,6 +32,53 @@ def load_custom_model(weights_path, num_classes):
     model.load_state_dict(ckpt['model'].float().state_dict(), strict=False)
     model.eval()
     return model.fuse()
+
+def sparsity(model):
+    # Return global model sparsity
+    a, b = 0., 0.
+    for p in model.parameters():
+        a += p.numel()
+        b += (p == 0).sum()
+    return b / a
+
+def safe_prune(module, name, amount):
+    try:
+        if isinstance(getattr(module, name), torch.nn.Parameter) and getattr(module, name).is_leaf:
+            prune.l1_unstructured(module, name=name, amount=amount)
+            prune.remove(module, name)
+            return True
+    except Exception as e:
+        print(f"Skipping pruning for {name} in {module.__class__.__name__}: {str(e)}")
+    return False
+
+def prune_layer(layer, amount=0.2):
+    pruned = False
+    if isinstance(layer, torch.nn.Conv2d):
+        if safe_prune(layer, 'weight', amount):
+            pruned = True
+        if layer.bias is not None and safe_prune(layer, 'bias', amount):
+            pruned = True
+    return pruned
+
+def prune_model(model, amount=0.2):
+    pruned_layers = 0
+    total_layers = 0
+
+    def recursive_prune(module):
+        nonlocal pruned_layers, total_layers
+        for name, child in module.named_children():
+            if list(child.children()):  # if the child has children, recurse
+                recursive_prune(child)
+            else:
+                total_layers += 1
+                if prune_layer(child, amount):
+                    pruned_layers += 1
+                    print(f"Pruned layer: {name} ({child.__class__.__name__})")
+
+    recursive_prune(model)
+    print(f'Pruned {pruned_layers}/{total_layers} layers')
+    print(f'Model pruned to {sparsity(model):.3g} global sparsity')
+    return model
 
 def preprocess_images(image_folder, input_size):
     resize_transform = transforms.Compose([
@@ -80,7 +128,7 @@ def run_inference(model_func, batches, num_runs=5, num_warmup=5):
             
             # Post-processing
             start_time = time.time()
-            non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred, classes=class_no)
+            non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred)
             end_time = time.time()
             post_processing_times.append(end_time - start_time)
         
@@ -132,11 +180,12 @@ def run_comparisons(input_size, num_runs=3):
     # Your custom YOLOv8 implementations
     dummy_input = torch.randn(1, 3, input_size, input_size)  
     custom_model = load_custom_model('./YOLOv8-test/weights/v8_n(1).pt', class_no)
-    
+    custom_model = prune_model(custom_model)
     compiled_model = torch.compile(custom_model)
     
-    """
+    
     onnx_path_custom = f'./YOLOv8-test/weights/yolov8_custom_{input_size}.onnx'
+    
     torch.onnx.export(custom_model, 
                   dummy_input, 
                   onnx_path_custom,
@@ -145,16 +194,14 @@ def run_comparisons(input_size, num_runs=3):
                   output_names=['output'],
                   dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}})
     os.system(f'onnxslim {onnx_path_custom} {onnx_path_custom}')
-    """
+    
 
     ultralytics_model = YOLO('yolov8n.pt')
     ultralytics_model.fuse()
     ultralytics_model.export(format="onnx", batch=batch_size,
                              imgsz=input_size,simplify=True, opset=13)
-    prunned_path = "./model.onnx"
+    
     # Run inferences
-    #os.system(f'onnxslim {prunned_path} {prunned_path}')
-    deepsparse_pruned = inference_deepsparse(prunned_path, batches, num_runs)
 
     pytorch_cpu_results = inference_pytorch_cpu(compiled_model, batches, num_runs)
     onnx_results = inference_onnx(onnx_path_custom, batches, num_runs)
@@ -164,7 +211,6 @@ def run_comparisons(input_size, num_runs=3):
     ultralytics_deepsparse_results = inference_deepsparse(f'./yolov8n.onnx', batches, num_runs)
 
     return {
-        'Pruned_deepsparse': deepsparse_pruned,
         'pytorch_cpu': pytorch_cpu_results,
         'onnx': onnx_results,
         'deepsparse': deepsparse_results,

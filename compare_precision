@@ -1,0 +1,164 @@
+import sys
+import os
+import time
+from tqdm import tqdm
+import torch
+import yaml
+from PIL import Image
+import numpy as np
+import torchvision.transforms as transforms
+import onnxruntime
+from deepsparse import compile_model
+from ultralytics import YOLO
+import logging
+from statistics import mean, stdev
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
+
+torch.set_float32_matmul_precision('high')
+sys.path.append('./YOLOv8-test')
+from nets import nn # type: ignore
+from utils.util import non_max_suppression # type: ignore 
+
+# Set up logging
+logging.basicConfig(filename='yolo_coco_evaluation.log', level=logging.INFO,
+                    format='- %(levelname)s - %(message)s')
+
+def load_custom_model(weights_path, num_classes):
+    model = nn.yolo_v8_n(num_classes).cpu()
+    ckpt = torch.load(weights_path, map_location='cpu')
+    model.load_state_dict(ckpt['model'].float().state_dict(), strict=False)
+    model.eval()
+    return model.fuse()
+
+def preprocess_images(image_folder, input_size):
+    resize_transform = transforms.Compose([
+        transforms.Resize((input_size, input_size)),
+        transforms.ToTensor(),
+    ])
+
+    image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
+    images = []
+    
+    for image_file in image_files:
+        image = Image.open(os.path.join(image_folder, image_file))
+        tensor = resize_transform(image)
+        tensor = tensor / 255
+        images.append(tensor)
+    
+    return images, image_files
+
+def run_inference(model_func, images):
+    results = []
+    for image in tqdm(images, desc="Running inference"):
+        with torch.no_grad():
+            pred = model_func(image.unsqueeze(0))
+            results.append(pred)
+    return results
+
+def inference_pytorch_cpu(model, images):
+    def model_func(batch):
+        return model(batch)
+    
+    return run_inference(model_func, images)
+
+def inference_onnx(onnx_path, images):
+    session = onnxruntime.InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
+    input_name = session.get_inputs()[0].name
+
+    def model_func(batch):
+        return session.run(None, {input_name: batch.numpy()})
+    
+    return run_inference(model_func, images)
+
+def inference_deepsparse(onnx_path, images):
+    pipe = compile_model(onnx_path, batch_size=1)
+
+    def model_func(batch):
+        return pipe([batch.numpy()])
+    
+    return run_inference(model_func, images)
+
+def inference_ultralytics(model, images):
+    def model_func(batch):
+        return model.model(batch)
+    
+    return run_inference(model_func, images)
+
+def convert_to_coco_format(predictions, image_ids, input_size):
+    coco_results = []
+    for pred, image_id in zip(predictions, image_ids):
+        boxes = pred[0][:, :4]  # x1, y1, x2, y2
+        scores = pred[0][:, 4]
+        labels = pred[0][:, 5].int()
+
+        # Convert boxes to COCO format (x, y, width, height)
+        boxes[:, 2] -= boxes[:, 0]
+        boxes[:, 3] -= boxes[:, 1]
+
+        for box, score, label in zip(boxes, scores, labels):
+            coco_results.append({
+                'image_id': int(image_id),
+                'category_id': int(label),
+                'bbox': box.tolist(),
+                'score': float(score)
+            })
+    
+    return coco_results
+
+def evaluate_coco(coco_gt, coco_results):
+    coco_dt = COCO.loadRes(coco_results)
+    coco_eval = COCOeval(coco_gt, coco_dt, 'bbox')
+    coco_eval.evaluate()
+    coco_eval.accumulate()
+    coco_eval.summarize()
+    return coco_eval.stats[0]  # mAP@[.5:.95]
+
+def run_coco_evaluation(input_size, coco_gt):
+    logging.info(f"\nRunning COCO evaluation for {input_size}x{input_size} images:")
+    print(f"\nRunning COCO evaluation for {input_size}x{input_size} images:")
+
+    # Prepare data
+    val_image_folder = './datasets/coco/val2017'
+    images, image_files = preprocess_images(val_image_folder, input_size)
+    image_ids = [int(os.path.splitext(f)[0]) for f in image_files]
+
+    # Load models
+    custom_model = load_custom_model('./YOLOv8-test/weights/v8_n(1).pt', 80)
+    compiled_model = torch.compile(custom_model)
+    
+    onnx_path_custom = f'./YOLOv8-test/weights/yolov8_custom_{input_size}.onnx'
+    ultralytics_model = YOLO('yolov8n.pt')
+
+    # Run inferences
+    pytorch_results = inference_pytorch_cpu(compiled_model, images)
+    onnx_results = inference_onnx(onnx_path_custom, images)
+    deepsparse_results = inference_deepsparse(onnx_path_custom, images)
+    ultralytics_results = inference_ultralytics(ultralytics_model, images)
+    ultralytics_onnx_results = inference_onnx(f'./yolov8n.onnx', images)
+    ultralytics_deepsparse_results = inference_deepsparse(f'./yolov8n.onnx', images)
+
+    # Convert results to COCO format and evaluate
+    results = {
+        'pytorch_cpu': evaluate_coco(coco_gt, convert_to_coco_format(pytorch_results, image_ids, input_size)),
+        'onnx': evaluate_coco(coco_gt, convert_to_coco_format(onnx_results, image_ids, input_size)),
+        'deepsparse': evaluate_coco(coco_gt, convert_to_coco_format(deepsparse_results, image_ids, input_size)),
+        'ultralytics': evaluate_coco(coco_gt, convert_to_coco_format(ultralytics_results, image_ids, input_size)),
+        'ultralytics_onnx': evaluate_coco(coco_gt, convert_to_coco_format(ultralytics_onnx_results, image_ids, input_size)),
+        'ultralytics_deepsparse': evaluate_coco(coco_gt, convert_to_coco_format(ultralytics_deepsparse_results, image_ids, input_size))
+    }
+
+    return results
+
+def main():
+    coco_annotation_file = './datasets/coco/annotations/instances_val2017.json'
+    coco_gt = COCO(coco_annotation_file)
+
+    results_640 = run_coco_evaluation(640, coco_gt)
+
+    logging.info("\nCOCO Evaluation Results:")
+    print("\nCOCO Evaluation Results:")
+
+
+if __name__ == "__main__":
+    main()
