@@ -32,7 +32,6 @@ def load_custom_model(weights_path, num_classes):
     model.load_state_dict(ckpt['model'].float().state_dict(), strict=False)
     model.eval()
     return model.fuse()
-
 def sparsity(model):
     # Return global model sparsity
     a, b = 0., 0.
@@ -43,7 +42,7 @@ def sparsity(model):
 
 def safe_prune(module, name, amount):
     try:
-        if isinstance(getattr(module, name), torch.nn.Parameter) and getattr(module, name).is_leaf:
+        if isinstance(getattr(module, name), torch.nn.Parameter): #and getattr(module, name).is_leaf:
             prune.l1_unstructured(module, name=name, amount=amount)
             prune.remove(module, name)
             return True
@@ -54,10 +53,21 @@ def safe_prune(module, name, amount):
 def prune_layer(layer, amount=0.2):
     pruned = False
     if isinstance(layer, torch.nn.Conv2d):
-        if safe_prune(layer, 'weight', amount):
+        # Create a copy of the layer
+        new_layer = copy.deepcopy(layer)
+        
+        # Prune the copied layer
+        if safe_prune(new_layer, 'weight', amount):
             pruned = True
-        if layer.bias is not None and safe_prune(layer, 'bias', amount):
+        if new_layer.bias is not None and safe_prune(new_layer, 'bias', amount):
             pruned = True
+        
+        # If pruning was successful, replace the original layer with the pruned copy
+        if pruned:
+            layer.weight.data = new_layer.weight.data
+            if layer.bias is not None:
+                layer.bias.data = new_layer.bias.data
+    
     return pruned
 
 def prune_model(model, amount=0.2):
@@ -74,10 +84,10 @@ def prune_model(model, amount=0.2):
                 if prune_layer(child, amount):
                     pruned_layers += 1
                     print(f"Pruned layer: {name} ({child.__class__.__name__})")
-
+    
     recursive_prune(model)
-    print(f'Pruned {pruned_layers}/{total_layers} layers')
-    print(f'Model pruned to {sparsity(model):.3g} global sparsity')
+    print(f"Pruned {pruned_layers} out of {total_layers} layers")
+    
     return model
 
 def preprocess_images(image_folder, input_size):
@@ -181,7 +191,9 @@ def run_comparisons(input_size, num_runs=3):
     dummy_input = torch.randn(1, 3, input_size, input_size)  
     custom_model = load_custom_model('./YOLOv8-test/weights/v8_n(1).pt', class_no)
     custom_model = prune_model(custom_model)
+    print(f"Sparsity: {sparsity(custom_model)}")
     compiled_model = torch.compile(custom_model)
+    
     
     
     onnx_path_custom = f'./YOLOv8-test/weights/yolov8_custom_{input_size}.onnx'
