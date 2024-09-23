@@ -15,9 +15,11 @@ from statistics import mean, stdev
 torch.set_float32_matmul_precision('high')
 sys.path.append('./YOLOv8-test')
 from nets import nn # type: ignore
-from utils.util import non_max_suppression # type: ignore 
+from utils.util import non_max_suppression # type: ignore
+#from ultralytics.utils.ops import non_max_suppression  
 from torch.nn.utils import prune
 import copy
+import pandas as pd  
 global batch_size, class_no
 batch_size = 1
 class_no = 80
@@ -147,7 +149,7 @@ def run_inference(model_func, batches, num_runs=5, num_warmup=5):
     
     avg_inference_time = mean(all_inference_times)
     avg_post_processing_time = mean(all_post_processing_times)
-    throughput = 1 / avg_inference_time
+    throughput = 1 / (avg_inference_time + avg_post_processing_time) 
     
     return avg_inference_time, avg_post_processing_time, throughput, stdev(all_inference_times)
 
@@ -190,10 +192,10 @@ def run_comparisons(input_size, num_runs=3):
     # Your custom YOLOv8 implementations
     dummy_input = torch.randn(1, 3, input_size, input_size)  
     custom_model = load_custom_model('./YOLOv8-test/weights/v8_n(1).pt', class_no)
-    custom_model = prune_model(custom_model)
+    custom_model = prune_model(custom_model, amount=0.25)
     print(f"Sparsity: {sparsity(custom_model)}")
     compiled_model = torch.compile(custom_model)
-    
+    openvino_model = torch.compile(custom_model,backend='openvino')
     
     
     onnx_path_custom = f'./YOLOv8-test/weights/yolov8_custom_{input_size}.onnx'
@@ -217,6 +219,7 @@ def run_comparisons(input_size, num_runs=3):
 
     pytorch_cpu_results = inference_pytorch_cpu(compiled_model, batches, num_runs)
     onnx_results = inference_onnx(onnx_path_custom, batches, num_runs)
+    openvino_results = inference_pytorch_cpu(openvino_model,batches,num_runs)
     deepsparse_results = inference_deepsparse(onnx_path_custom, batches, num_runs)
     ultralytics_results = inference_ultralytics(ultralytics_model, batches, num_runs)
     ultralytics_onnx_results = inference_onnx(f'./yolov8n.onnx', batches, num_runs)
@@ -225,6 +228,7 @@ def run_comparisons(input_size, num_runs=3):
     return {
         'pytorch_cpu': pytorch_cpu_results,
         'onnx': onnx_results,
+        'openvino': openvino_results,
         'deepsparse': deepsparse_results,
         'ultralytics': ultralytics_results,
         'ultralytics_onnx': ultralytics_onnx_results,
@@ -239,7 +243,13 @@ def main():
 
     results_640 = run_comparisons(640, num_runs)
     results_256 = run_comparisons(256, num_runs)
-    logging.info("---Compiled---")
+    results_128 = run_comparisons(128, num_runs)
+    results_64 = run_comparisons(64, num_runs)
+    results_32 = run_comparisons(32, num_runs)
+    df = pd.DataFrame.from_records([results_640,results_256,results_128,results_64,results_32],
+                                   index=['1', '2','3','4','5'])
+    df.to_csv('Comparison.csv')
+    logging.info("---Compiled & 25% sparse---")
     logging.info("\nComparison Results:")
     logging.info("640x640 Images:")
     print("\nComparison Results:")
