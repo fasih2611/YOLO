@@ -193,3 +193,298 @@ Post-processing Time = 0.0002 s, Throughput = 55.06 images/s
 - INFO - 
 Running comparisons for 640x640 images:
 - INFO - Average Preprocessing Time per image (640x640): 0.0048 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0054 seconds
+- INFO - 
+Running comparisons for 256x256 images:
+- INFO - Average Preprocessing Time per image (256x256): 0.0025 seconds
+- INFO - ---Compiled---
+- INFO - 
+Comparison Results:
+- INFO - 640x640 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.0265 s ± 0.0056 s,
+Post-processing Time = 0.0007 s, Throughput = 37.70 images/s
+
+- INFO - 
+onnx: Inference Time = 0.0317 s ± 0.0092 s,
+Post-processing Time = 0.0067 s, Throughput = 31.52 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0280 s ± 0.0190 s,
+Post-processing Time = 0.0009 s, Throughput = 35.66 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.0253 s ± 0.0018 s,
+Post-processing Time = 0.0003 s, Throughput = 39.60 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.0303 s ± 0.0078 s,
+Post-processing Time = 0.0073 s, Throughput = 33.01 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0272 s ± 0.0186 s,
+Post-processing Time = 0.0005 s, Throughput = 36.76 images/s
+
+- INFO - 
+256x256 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.0125 s ± 0.0015 s,
+Post-processing Time = 0.0005 s, Throughput = 80.04 images/s
+
+- INFO - 
+onnx: Inference Time = 0.0101 s ± 0.0048 s,
+Post-processing Time = 0.0166 s, Throughput = 98.70 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0214 s ± 0.0197 s,
+Post-processing Time = 0.0006 s, Throughput = 46.76 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.0095 s ± 0.0010 s,
+Post-processing Time = 0.0001 s, Throughput = 105.02 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.0105 s ± 0.0055 s,
+Post-processing Time = 0.0169 s, Throughput = 95.31 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0171 s ± 0.0161 s,
+Post-processing Time = 0.0002 s, Throughput = 58.44 images/s
+
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0046 seconds
+- INFO - 
+Running comparisons for 256x256 images:
+- INFO - Average Preprocessing Time per image (256x256): 0.0025 seconds
+- INFO - ---Compiled---
+- INFO - 
+Comparison Results:
+- INFO - 640x640 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.0216 s ± 0.0015 s,
+Post-processing Time = 0.0005 s, Throughput = 46.34 images/s
+
+- INFO - 
+onnx: Inference Time = 0.0330 s ± 0.0094 s,
+Post-processing Time = 0.0091 s, Throughput = 30.29 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0274 s ± 0.0181 s,
+Post-processing Time = 0.0009 s, Throughput = 36.48 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.0270 s ± 0.0021 s,
+Post-processing Time = 0.0002 s, Throughput = 36.97 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.0375 s ± 0.0145 s,
+Post-processing Time = 0.0104 s, Throughput = 26.70 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0267 s ± 0.0181 s,
+Post-processing Time = 0.0005 s, Throughput = 37.52 images/s
+
+- INFO - 
+256x256 Images:
+- INFO - 
+pytorch_cpu: Inference Time = 0.0097 s ± 0.0009 s,
+Post-processing Time = 0.0004 s, Throughput = 102.89 images/s
+
+- INFO - 
+onnx: Inference Time = 0.0100 s ± 0.0049 s,
+Post-processing Time = 0.0173 s, Throughput = 100.32 images/s
+
+- INFO - 
+deepsparse: Inference Time = 0.0193 s ± 0.0179 s,
+Post-processing Time = 0.0005 s, Throughput = 51.81 images/s
+
+- INFO - 
+ultralytics: Inference Time = 0.0094 s ± 0.0008 s,
+Post-processing Time = 0.0001 s, Throughput = 106.70 images/s
+
+- INFO - 
+ultralytics_onnx: Inference Time = 0.0101 s ± 0.0049 s,
+Post-processing Time = 0.0176 s, Throughput = 99.35 images/s
+
+- INFO - 
+ultralytics_deepsparse: Inference Time = 0.0185 s ± 0.0182 s,
+Post-processing Time = 0.0002 s, Throughput = 53.93 images/s
+
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0050 seconds
+- INFO - 
+Running comparisons for 256x256 images:
+- INFO - Average Preprocessing Time per image (256x256): 0.0023 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0047 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0049 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0045 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0050 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0052 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0047 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0053 seconds
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: conv (Conv2d)
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: 2 (Conv2d)
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: 2 (Conv2d)
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: 2 (Conv2d)
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: 2 (Conv2d)
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: 2 (Conv2d)
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning weight in Conv2d: Cannot assign non-leaf Tensor to parameter 'weight_orig'. Model parameters must be created explicitly. To express 'weight_orig' as a function of another Tensor, compute the value in the forward() method.
+- ERROR - Error pruning bias in Conv2d: Cannot assign non-leaf Tensor to parameter 'bias_orig'. Model parameters must be created explicitly. To express 'bias_orig' as a function of another Tensor, compute the value in the forward() method.
+- INFO - Successfully pruned layer: 2 (Conv2d)
+- INFO - Pruned 7/139 layers
+- INFO - Model pruned to 3.81e-06 global sparsity
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0046 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0047 seconds
+- INFO - 
+Running comparisons for 640x640 images:
+- INFO - Average Preprocessing Time per image (640x640): 0.0047 seconds
