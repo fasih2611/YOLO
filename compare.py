@@ -1,3 +1,4 @@
+import gc
 import sys
 import os
 import time
@@ -8,7 +9,7 @@ from PIL import Image
 import numpy as np
 import torchvision.transforms as transforms
 import onnxruntime
-from deepsparse import compile_model
+#from deepsparse import compile_model
 from ultralytics import YOLO
 import logging
 from statistics import mean, stdev
@@ -19,12 +20,33 @@ from utils.util import non_max_suppression # type: ignore
 #from ultralytics.utils.ops import non_max_suppression  
 from torch.nn.utils import prune
 import copy
-import pandas as pd  
-global batch_size, class_no
+import csv
+import intel_extension_for_pytorch as ipex
+
+global batch_size, class_no , preprocess_time
 batch_size = 1
 class_no = 80
-
+preprocess_time = 0
 # Set up logging
+def write_results_to_csv(results, filename='yolo_comparison_results.csv'):
+    with open(filename, 'w', newline='') as csvfile:
+        fieldnames = ['Model', 'Image Size', 'Preprocess Time', 'Inference Time', 'Post-processing Time', 'Throughput', 'Inference Time Std Dev']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for image_size, size_results in results.items():
+            for model, model_results in size_results.items():
+                writer.writerow({
+                    'Model': model,
+                    'Image Size': image_size,
+                    'Preprocess Time': f'{model_results[0]:.4f}',
+                    'Inference Time': f'{model_results[1]:.4f}',
+                    'Post-processing Time': f'{model_results[2]:.4f}',
+                    'Throughput': f'{model_results[3]:.4f}',
+                    'Inference Time Std Dev': f'{model_results[4]:.4f}'
+                })
+
+
 logging.basicConfig(filename='yolo_comparison.log', level=logging.INFO,
                     format='- %(levelname)s - %(message)s')
 
@@ -35,7 +57,6 @@ def load_custom_model(weights_path, num_classes):
     model.eval()
     return model.fuse()
 def sparsity(model):
-    # Return global model sparsity
     a, b = 0., 0.
     for p in model.parameters():
         a += p.numel()
@@ -55,16 +76,11 @@ def safe_prune(module, name, amount):
 def prune_layer(layer, amount=0.2):
     pruned = False
     if isinstance(layer, torch.nn.Conv2d):
-        # Create a copy of the layer
-        new_layer = copy.deepcopy(layer)
-        
-        # Prune the copied layer
+        new_layer = copy.deepcopy(layer)        
         if safe_prune(new_layer, 'weight', amount):
             pruned = True
         if new_layer.bias is not None and safe_prune(new_layer, 'bias', amount):
             pruned = True
-        
-        # If pruning was successful, replace the original layer with the pruned copy
         if pruned:
             layer.weight.data = new_layer.weight.data
             if layer.bias is not None:
@@ -106,19 +122,20 @@ def preprocess_images(image_folder, input_size):
     for i in range(0, len(image_files), batch_size):
         batch = []
         for j in range(i, min(i + batch_size, len(image_files))):
-            start_time = time.time()
+            start_time = time.perf_counter()
             image = Image.open(os.path.join(image_folder, image_files[j]))
             tensor = resize_transform(image)
             tensor = tensor / 255
-            end_time = time.time()
+            end_time = time.perf_counter()
             preprocess_times.append(end_time - start_time)
             
             batch.append(tensor)
         batches.append(torch.stack(batch))
     
-    avg_preprocess_time = mean(preprocess_times)
-    logging.info(f"Average Preprocessing Time per image ({input_size}x{input_size}): {avg_preprocess_time:.4f} seconds")
-    print(f"Average Preprocessing Time per image ({input_size}x{input_size}): {avg_preprocess_time:.4f} seconds")
+    global preprocess_time
+    preprocess_time = mean(preprocess_times)
+    #logging.info(f"Average Preprocessing Time per image ({input_size}x{input_size}): {avg_preprocess_time:.4f} seconds")
+    print(f"Average Preprocessing Time per image ({input_size}x{input_size}): {preprocess_time:.4f} seconds")
     return batches
 
 def run_inference(model_func, batches, num_runs=5, num_warmup=5):
@@ -133,25 +150,25 @@ def run_inference(model_func, batches, num_runs=5, num_warmup=5):
         inference_times = []
         post_processing_times = []
         for batch in tqdm(batches, desc=f"Run {run+1}/{num_runs}"):
-            start_time = time.time()
+            start_time = time.perf_counter()
             pred = model_func(batch)
-            end_time = time.time()
+            end_time = time.perf_counter()
             inference_times.append(end_time - start_time)
             
             # Post-processing
-            start_time = time.time()
+            start_time = time.perf_counter()
             non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred)
-            end_time = time.time()
+            end_time = time.perf_counter()
             post_processing_times.append(end_time - start_time)
         
         all_inference_times.extend(inference_times)
         all_post_processing_times.extend(post_processing_times)
-    
+    global preprocess_time
     avg_inference_time = mean(all_inference_times)
     avg_post_processing_time = mean(all_post_processing_times)
-    throughput = 1 / (avg_inference_time + avg_post_processing_time) 
+    throughput = 1 / (avg_inference_time + avg_post_processing_time + preprocess_time) 
     
-    return avg_inference_time, avg_post_processing_time, throughput, stdev(all_inference_times)
+    return preprocess_time, avg_inference_time , avg_post_processing_time, throughput, stdev(all_inference_times)
 
 def inference_pytorch_cpu(model, batches, num_runs=5, num_warmup=5):
     def model_func(batch):
@@ -170,7 +187,7 @@ def inference_onnx(onnx_path, batches, num_runs=5, num_warmup=5):
     return run_inference(model_func, batches, num_runs, num_warmup)
 
 def inference_deepsparse(onnx_path, batches, num_runs=5, num_warmup=5):
-    pipe = compile_model(onnx_path, batch_size=batch_size)
+    pipe = compile_model(onnx_path, batch_size=batch_size) # type:ignore
 
     def model_func(batch):
         return pipe([batch.numpy()])
@@ -183,22 +200,22 @@ def inference_ultralytics(model, batches, num_runs=5, num_warmup=5):
     
     return run_inference(model_func, batches, num_runs, num_warmup)
 
-def run_comparisons(input_size, num_runs=3):
-    logging.info(f"\nRunning comparisons for {input_size}x{input_size} images:")
+def run_comparisons(input_size, model_type, num_runs=3):
     print(f"\nRunning comparisons for {input_size}x{input_size} images:")
     # Prepare data
     batches = preprocess_images('./datasets/coco128/images/train2017', input_size)
 
-    # Your custom YOLOv8 implementations
+    """
     dummy_input = torch.randn(1, 3, input_size, input_size)  
     custom_model = load_custom_model('./YOLOv8-test/weights/v8_n(1).pt', class_no)
-    custom_model = prune_model(custom_model, amount=0.25)
+    custom_model = prune_model(custom_model, amount=0.10)
     print(f"Sparsity: {sparsity(custom_model)}")
-    compiled_model = torch.compile(custom_model)
-    openvino_model = torch.compile(custom_model,backend='openvino')
+    custom_model_ipex = ipex.optimize(custom_model)
+    compiled_model = torch.compile(custom_model_ipex,backend='ipex')
+    openvino_model = torch.compile(custom_model,backend='openvino')"""
     
     
-    onnx_path_custom = f'./YOLOv8-test/weights/yolov8_custom_{input_size}.onnx'
+    """onnx_path_custom = f'./YOLOv8-test/weights/yolov8_custom_{input_size}.onnx'
     
     torch.onnx.export(custom_model, 
                   dummy_input, 
@@ -208,65 +225,55 @@ def run_comparisons(input_size, num_runs=3):
                   output_names=['output'],
                   dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}})
     os.system(f'onnxslim {onnx_path_custom} {onnx_path_custom}')
+    """
     
 
-    ultralytics_model = YOLO('yolov8n.pt')
+    ultralytics_model = YOLO(f'{model_type}.pt')
     ultralytics_model.fuse()
+
+    #ipex_model = YOLO('yolov9t.pt')
+    #ipex_model.fuse()
+    #ipex_model = ipex_model.model
+    #ipex_model.compile(backend='ipex')
+
+    #ultralytics_torch = YOLO('yolov9t.pt')
+    #ultralytics_torch.fuse()
+    #ultralytics_torch = ultralytics_torch.model
+    #ultralytics_torch.compile()
+    
     ultralytics_model.export(format="onnx", batch=batch_size,
                              imgsz=input_size,simplify=True, opset=13)
     
     # Run inferences
 
-    pytorch_cpu_results = inference_pytorch_cpu(compiled_model, batches, num_runs)
-    onnx_results = inference_onnx(onnx_path_custom, batches, num_runs)
-    openvino_results = inference_pytorch_cpu(openvino_model,batches,num_runs)
-    deepsparse_results = inference_deepsparse(onnx_path_custom, batches, num_runs)
-    ultralytics_results = inference_ultralytics(ultralytics_model, batches, num_runs)
-    ultralytics_onnx_results = inference_onnx(f'./yolov8n.onnx', batches, num_runs)
-    ultralytics_deepsparse_results = inference_deepsparse(f'./yolov8n.onnx', batches, num_runs)
+    #pytorch_cpu_results = inference_pytorch_cpu(compiled_model, batches, num_runs)
+    #onnx_results = inference_onnx(onnx_path_custom, batches, num_runs)
+    #openvino_results = inference_pytorch_cpu(openvino_model,batches,num_runs)
+    #deepsparse_results = inference_deepsparse(onnx_path_custom, batches, num_runs)
+    #ultralytics_ipex_results = inference_pytorch_cpu(ipex_model,batches,num_runs);gc.collect()
+    #ultralytics_torch_results = inference_pytorch_cpu(ultralytics_torch,batches,num_runs);gc.collect()
+    ultralytics_results = inference_ultralytics(ultralytics_model, batches, num_runs);gc.collect()
+    ultralytics_onnx_results = inference_onnx(f'./{model_type}.onnx', batches, num_runs);gc.collect()
+    
+    del ultralytics_model
 
     return {
-        'pytorch_cpu': pytorch_cpu_results,
-        'onnx': onnx_results,
-        'openvino': openvino_results,
-        'deepsparse': deepsparse_results,
-        'ultralytics': ultralytics_results,
-        'ultralytics_onnx': ultralytics_onnx_results,
-        'ultralytics_deepsparse': ultralytics_deepsparse_results
+        f'{model_type} ultralytics': ultralytics_results,
+        #'ultralytics_ipex':ultralytics_ipex_results,
+        f'{model_type} ultralytics_onnx': ultralytics_onnx_results,
+        #'ultralytics_torch': ultralytics_torch_results,
     }
 
 def main():
-    with open('./YOLOv8-test/utils/args.yaml', errors='ignore') as f:
-        params = yaml.safe_load(f)
-
     num_runs = 5  # Number of full runs for each model and input size
+    sizes = [1024, 768, 640, 320, 128]
+    models = ['yolov5n6u', 'yolov8n', 'yolov9t','yolov10n', 'yolo11n']
+    results = {}
+    for model in models:
+        for size in sizes:
+            results[size] = run_comparisons(size,model ,num_runs)
+        write_results_to_csv(results,filename=f'{model} - speed comparison')
 
-    results_640 = run_comparisons(640, num_runs)
-    results_256 = run_comparisons(256, num_runs)
-    results_128 = run_comparisons(128, num_runs)
-    results_64 = run_comparisons(64, num_runs)
-    results_32 = run_comparisons(32, num_runs)
-    df = pd.DataFrame.from_records([results_640,results_256,results_128,results_64,results_32],
-                                   index=['1', '2','3','4','5'])
-    df.to_csv('Comparison.csv')
-    logging.info("---Compiled & 25% sparse---")
-    logging.info("\nComparison Results:")
-    logging.info("640x640 Images:")
-    print("\nComparison Results:")
-    print("640x640 Images:")
-    for model, results in results_640.items():
-        log_message = (f"\n{model}: Inference Time = {results[0]:.4f} s ± {results[3]:.4f} s,\n"
-                       f"Post-processing Time = {results[1]:.4f} s, Throughput = {results[2]:.2f} images/s\n")
-        logging.info(log_message)
-        print(log_message)
-    
-    logging.info("\n256x256 Images:")
-    print("\n256x256 Images:")
-    for model, results in results_256.items():
-        log_message = (f"\n{model}: Inference Time = {results[0]:.4f} s ± {results[3]:.4f} s,\n"
-                       f"Post-processing Time = {results[1]:.4f} s, Throughput = {results[2]:.2f} images/s\n")
-        logging.info(log_message)
-        print(log_message)
 
 if __name__ == "__main__":
     main()
