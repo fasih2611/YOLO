@@ -4,11 +4,12 @@ import os
 import time
 from tqdm import tqdm
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 import onnxruntime
 from ultralytics import YOLO
 import logging
-from statistics import mean, stdev
+from statistics import mean
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 import numpy as np
@@ -16,6 +17,7 @@ from PIL import Image
 import csv
 sys.path.append('./YOLOv8-test')
 from utils.util import non_max_suppression # type: ignore
+
 # Global variables
 batch_size = 1
 class_no = 80
@@ -24,6 +26,81 @@ preprocess_time = 0
 # Set up logging
 logging.basicConfig(filename='yolo_precision_evaluation.log', level=logging.INFO,
                     format='- %(levelname)s - %(message)s')
+
+class COCODataset(Dataset):
+    def __init__(self, image_folder, input_size):
+        self.image_folder = image_folder
+        self.input_size = input_size
+        self.transform = transforms.Compose([
+            transforms.Resize((input_size, input_size)),
+            transforms.ToTensor(),
+        ])
+        
+        # Filter out grayscale images during initialization
+        self.valid_images = []
+        skipped_images = []
+        
+        for f in os.listdir(image_folder):
+            if f.endswith(('.png', '.jpg', '.jpeg')):
+                try:
+                    image_path = os.path.join(image_folder, f)
+                    with Image.open(image_path) as img:
+                        if img.mode == 'L':  # L means grayscale
+                            skipped_images.append(f)
+                            continue
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        self.valid_images.append(f)
+                except Exception as e:
+                    logging.error(f"Error loading image {f}: {str(e)}")
+                    continue
+        
+        if skipped_images:
+            logging.info(f"Skipped {len(skipped_images)} grayscale images: {', '.join(skipped_images)}")
+            print(f"Skipped {len(skipped_images)} grayscale images. Check log for details.")
+        
+        print(f"Found {len(self.valid_images)} valid RGB images")
+    
+    def __len__(self):
+        return len(self.valid_images)
+    
+    def __getitem__(self, idx):
+        start_time = time.perf_counter()
+        
+        image_path = os.path.join(self.image_folder, self.valid_images[idx])
+        try:
+            with Image.open(image_path) as image:
+                if image.mode != 'RGB':
+                    image = image.convert('RGB')
+                tensor = self.transform(image)
+                #tensor = tensor / 255
+                
+                end_time = time.perf_counter()
+                preprocess_duration = end_time - start_time
+                
+                return tensor, self.valid_images[idx], preprocess_duration
+        except Exception as e:
+            logging.error(f"Error processing image {self.valid_images[idx]} during batch loading: {str(e)}")
+            # Return a zero tensor of the correct shape in case of error
+            tensor = torch.zeros(3, self.input_size, self.input_size)
+            return tensor, self.valid_images[idx], 0.0
+
+
+def inference_ultralytics(model, dataloader):
+    def model_func(batch):
+        return model.model(batch)
+    
+    return run_inference(model_func, dataloader)
+
+def inference_onnx(onnx_path, dataloader):
+    session = onnxruntime.InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
+    input_name = session.get_inputs()[0].name
+
+    def model_func(batch):
+        return session.run(None, {input_name: batch.numpy()})
+    
+    return run_inference(model_func, dataloader)
+
 
 def write_results_to_csv(results, filename='yolo_precision_results.csv'):
     with open(filename, 'w', newline='') as csvfile:
@@ -43,131 +120,203 @@ def write_results_to_csv(results, filename='yolo_precision_results.csv'):
                     'mAP@0.5:0.95': f'{model_results[4]:.4f}'
                 })
 
-def preprocess_images(image_folder, input_size):
-    resize_transform = transforms.Compose([
-        transforms.Resize((input_size, input_size)),
-        transforms.ToTensor(),
-    ])
-
-    image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
-    batches = []
-    preprocess_times = []
-
-    for i in range(0, len(image_files), batch_size):
-        batch = []
-        for j in range(i, min(i + batch_size, len(image_files))):
-            start_time = time.perf_counter()
-            image = Image.open(os.path.join(image_folder, image_files[j]))
-            tensor = resize_transform(image)
-            tensor = tensor / 255
-            end_time = time.perf_counter()
-            preprocess_times.append(end_time - start_time)
-            
-            batch.append(tensor)
-        batches.append(torch.stack(batch))
-    
-    global preprocess_time
-    preprocess_time = mean(preprocess_times)
-    print(f"Average Preprocessing Time per image ({input_size}x{input_size}): {preprocess_time:.4f} seconds")
-    return batches, image_files
-
-def run_inference(model_func, batches):
-    inference_times = []
-    post_processing_times = []
-    all_predictions = []
-    
-    for batch in tqdm(batches, desc="Running inference"):
-        start_time = time.perf_counter()
-        pred = model_func(batch)
-        end_time = time.perf_counter()
-        inference_times.append(end_time - start_time)
-        
-        # Post-processing
-        start_time = time.perf_counter()
-        processed_pred = non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred)
-        end_time = time.perf_counter()
-        post_processing_times.append(end_time - start_time)
-        
-        all_predictions.extend(processed_pred)
-    
-    global preprocess_time
-    avg_inference_time = mean(inference_times)
-    avg_post_processing_time = mean(post_processing_times)
-    
-    return preprocess_time, avg_inference_time, avg_post_processing_time, all_predictions
-
-def inference_ultralytics(model, batches):
-    def model_func(batch):
-        return model.model(batch)
-    
-    return run_inference(model_func, batches)
-
-def inference_onnx(onnx_path, batches):
-    session = onnxruntime.InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
-    input_name = session.get_inputs()[0].name
-
-    def model_func(batch):
-        return session.run(None, {input_name: batch.numpy()})
-    
-    return run_inference(model_func, batches)
-
 def calculate_precision(predictions, coco_gt, image_ids, input_size):
     coco_dt = COCO()
-    coco_dt.dataset = {'images': [], 'categories': coco_gt.dataset['categories'], 'annotations': []}
-    coco_dt.createIndex()
-
+    
+    # Initialize with same categories as ground truth
+    coco_dt.dataset = {
+        'images': [],
+        'categories': coco_gt.dataset['categories'],
+        'annotations': []
+    }
+    
+    # Debug info
+    print(f"Processing {len(predictions)} predictions")
+    total_detections = 0
+    
     ann_id = 1
     for i, pred in enumerate(predictions):
+        if pred is None or len(pred) == 0:
+            continue
+            
         image_id = int(image_ids[i].split('.')[0])
-        for *xyxy, conf, cls in pred:
-            x1, y1, x2, y2 = xyxy
-            w = x2 - x1
-            h = y2 - y1
+        
+        # Get original image dimensions from COCO GT
+        img_info = next((img for img in coco_gt.dataset['images'] if img['id'] == image_id), None)
+        if img_info is None:
+            continue
+            
+        orig_width = img_info['width']
+        orig_height = img_info['height']
+        
+        # Scale factors to convert normalized coordinates back to original image size
+        scale_x = orig_width / input_size
+        scale_y = orig_height / input_size
+        
+        for *box, conf, cls in pred:
+            if conf < 0.001:  # Skip very low confidence predictions
+                continue
+                
+            # YOLO format is [x_center, y_center, width, height] normalized
+            x_center, y_center, width, height = [float(coord) for coord in box]
+            
+            # Scale back to original image size
+            x_center *= scale_x
+            y_center *= scale_y
+            width *= scale_x
+            height *= scale_y
+            
+            # Convert to COCO format [x_min, y_min, width, height]
+            x_min = x_center - width / 2
+            y_min = y_center - height / 2
+            
+            # Skip invalid boxes
+            if width <= 0 or height <= 0:
+                continue
+                
             ann = {
                 'image_id': image_id,
                 'category_id': int(cls) + 1,  # COCO categories start from 1
-                'bbox': [x1, y1, w, h],
+                'bbox': [x_min, y_min, width, height],  # COCO format
                 'score': float(conf),
-                'area': float(w * h),
+                'area': float(width * height),
                 'iscrowd': 0,
                 'id': ann_id
             }
             coco_dt.dataset['annotations'].append(ann)
             ann_id += 1
-        coco_dt.dataset['images'].append({'id': image_id, 'file_name': image_ids[i]})
-
+            total_detections += 1
+            
+            # Debug first few predictions
+            if total_detections <= 5:
+                print(f"\nPrediction {total_detections}:")
+                print(f"Original YOLO: center=({x_center}, {y_center}), size=({width}, {height})")
+                print(f"COCO format: bbox=({x_min}, {y_min}, {width}, {height})")
+                print(f"Confidence: {conf:.3f}, Class: {int(cls)}")
+        
+        # Add image info
+        if not any(img['id'] == image_id for img in coco_dt.dataset['images']):
+            coco_dt.dataset['images'].append({
+                'id': image_id,
+                'file_name': image_ids[i],
+                'height': orig_height,
+                'width': orig_width
+            })
+    
+    print(f"\nTotal detections processed: {total_detections}")
+    print(f"Number of images with detections: {len(coco_dt.dataset['images'])}")
+    
+    if total_detections == 0:
+        print("WARNING: No valid detections found!")
+        return 0.0, 0.0
+    
+    # Create index for evaluation
     coco_dt.createIndex()
+    
+    # Initialize COCO evaluator
     coco_eval = COCOeval(coco_gt, coco_dt, 'bbox')
     coco_eval.params.imgIds = [int(img_id.split('.')[0]) for img_id in image_ids]
-    coco_eval.evaluate()
-    coco_eval.accumulate()
-    coco_eval.summarize()
+    
+    # Run evaluation
+    try:
+        coco_eval.evaluate()
+        coco_eval.accumulate()
+        coco_eval.summarize()
+    except Exception as e:
+        print(f"Error during COCO evaluation: {str(e)}")
+        return 0.0, 0.0
 
     return coco_eval.stats[1], coco_eval.stats[0]  # mAP@0.5, mAP@0.5:0.95
 
+def run_inference(model_func, dataloader):
+    inference_times = []
+    post_processing_times = []
+    preprocess_times = []
+    all_predictions = []
+    image_files = []
+    
+    for batch, filenames, prep_times in tqdm(dataloader, desc="Running inference"):
+        preprocess_times.extend(prep_times.tolist())
+        
+        # Inference
+        start_time = time.perf_counter()
+        pred = model_func(batch)
+        end_time = time.perf_counter()
+        inference_times.append(end_time - start_time)
+        # Post-processing
+        start_time = time.perf_counter()
+        # Note: non_max_suppression expects and returns boxes in [x1, y1, x2, y2] format
+        processed_pred = non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred)
+
+        # Convert [x1, y1, x2, y2] to [x_center, y_center, width, height]
+        converted_pred = []
+        for img_pred in processed_pred:
+            if img_pred is None or len(img_pred) == 0:
+                converted_pred.append(img_pred)
+                continue
+                
+            img_converted = []
+            for *xyxy, conf, cls in img_pred:
+                x1, y1, x2, y2 = [float(coord) for coord in xyxy]
+                # Convert to center format
+                x_center = (x1 + x2) / 2
+                y_center = (y1 + y2) / 2
+                width = x2 - x1
+                height = y2 - y1
+                img_converted.append([x_center, y_center, width, height, conf, cls])
+            converted_pred.append(torch.tensor(img_converted) if len(img_converted) > 0 else None)
+        
+        end_time = time.perf_counter()
+        post_processing_times.append(end_time - start_time)
+        
+        all_predictions.extend(converted_pred)
+        image_files.extend(filenames)
+    
+    avg_preprocess_time = mean(preprocess_times)
+    avg_inference_time = mean(inference_times)
+    avg_post_processing_time = mean(post_processing_times)
+    
+    return avg_preprocess_time, avg_inference_time, avg_post_processing_time, all_predictions, image_files
+
+
+# Add these debug functions to help diagnose prediction issues
+def print_prediction_summary(predictions, image_ids):
+    print("\nPrediction Summary:")
+    for i, pred in enumerate(predictions):
+        if pred is not None and len(pred) > 0:
+            print(f"Image {image_ids[i]}: {len(pred)} predictions")
+            print("Sample prediction:", pred[0])
+
 def run_comparisons(input_size, model_type):
     print(f"\nRunning comparisons for {input_size}x{input_size} images:")
-    ultralytics_model = YOLO(f'{model_type}.pt')
-    ultralytics_model.eval()
-    # Load COCO annotations
-    coco_gt = COCO('./datasets/coco2017/annotations/instances_val2017.json')
-    
-    # Prepare data
-    batches, image_ids = preprocess_images('./datasets/coco2017/images/val2017', input_size)
 
+    # Load COCO annotations
+    coco_gt = COCO('./datasets/coco/labels/annotations/instances_val2017.json')
     
+    # Create dataset and dataloader
+    dataset = COCODataset('./datasets/coco/images/val2017', input_size)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+
+    # Initialize models
+    ultralytics_model = YOLO(f'{model_type}.pt')
     ultralytics_model.fuse()
 
     ultralytics_model.export(format="onnx", batch=batch_size,
-                             imgsz=input_size, simplify=True, opset=13)
+                           imgsz=input_size, simplify=True, opset=13)
     
     # Run inferences
-    ultralytics_results = inference_ultralytics(ultralytics_model, batches)
-    ultralytics_onnx_results = inference_onnx(f'./{model_type}.onnx', batches)
+    ultralytics_results = inference_ultralytics(ultralytics_model, dataloader)
+    
+    # Debug: Print prediction summary
+    print_prediction_summary(ultralytics_results[3], ultralytics_results[4])
     
     # Calculate precision
-    ultralytics_map50, ultralytics_map = calculate_precision(ultralytics_results[3], coco_gt, image_ids, input_size)
-    ultralytics_onnx_map50, ultralytics_onnx_map = calculate_precision(ultralytics_onnx_results[3], coco_gt, image_ids, input_size)
+    ultralytics_map50, ultralytics_map = calculate_precision(
+        ultralytics_results[3], coco_gt, ultralytics_results[4], input_size)
+        
+    ultralytics_onnx_results = inference_onnx(f'./{model_type}.onnx', dataloader)
+    ultralytics_onnx_map50, ultralytics_onnx_map = calculate_precision(
+        ultralytics_onnx_results[3], coco_gt, ultralytics_onnx_results[4], input_size)
     
     del ultralytics_model
     gc.collect()
@@ -179,7 +328,7 @@ def run_comparisons(input_size, model_type):
 
 def main():
     sizes = [640]
-    models = ['yolov8n', 'yolov5n'] 
+    models = ['yolov8n', 'yolov5n6u']
     results = {}
     for model in models:
         for size in sizes:
