@@ -10,22 +10,19 @@ import onnxruntime
 from ultralytics import YOLO
 import logging
 from statistics import mean
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
 import numpy as np
 from PIL import Image
 import csv
+import json
+from collections import defaultdict
 sys.path.append('./YOLOv8-test')
-from utils.util import non_max_suppression # type: ignore
+from ultralytics.utils.ops import non_max_suppression # type: ignore
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
-# Global variables
+# Global variables remain the same
 batch_size = 1
 class_no = 80
 preprocess_time = 0
-
-# Set up logging
-logging.basicConfig(filename='yolo_precision_evaluation.log', level=logging.INFO,
-                    format='- %(levelname)s - %(message)s')
 
 class COCODataset(Dataset):
     def __init__(self, image_folder, input_size):
@@ -35,11 +32,11 @@ class COCODataset(Dataset):
             transforms.Resize((input_size, input_size)),
             transforms.ToTensor(),
         ])
-        
+
         # Filter out grayscale images during initialization
         self.valid_images = []
         skipped_images = []
-        
+
         for f in os.listdir(image_folder):
             if f.endswith(('.png', '.jpg', '.jpeg')):
                 try:
@@ -54,42 +51,203 @@ class COCODataset(Dataset):
                 except Exception as e:
                     logging.error(f"Error loading image {f}: {str(e)}")
                     continue
-        
+
+
+
         if skipped_images:
             logging.info(f"Skipped {len(skipped_images)} grayscale images: {', '.join(skipped_images)}")
             print(f"Skipped {len(skipped_images)} grayscale images. Check log for details.")
-        
+
         print(f"Found {len(self.valid_images)} valid RGB images")
-    
+
     def __len__(self):
         return len(self.valid_images)
-    
+
     def __getitem__(self, idx):
         start_time = time.perf_counter()
-        
+
         image_path = os.path.join(self.image_folder, self.valid_images[idx])
         try:
             with Image.open(image_path) as image:
                 if image.mode != 'RGB':
                     image = image.convert('RGB')
                 tensor = self.transform(image)
-                #tensor = tensor / 255
-                
+
                 end_time = time.perf_counter()
                 preprocess_duration = end_time - start_time
-                
+
                 return tensor, self.valid_images[idx], preprocess_duration
         except Exception as e:
             logging.error(f"Error processing image {self.valid_images[idx]} during batch loading: {str(e)}")
-            # Return a zero tensor of the correct shape in case of error
             tensor = torch.zeros(3, self.input_size, self.input_size)
             return tensor, self.valid_images[idx], 0.0
 
+class COCOEvaluator:
+    def __init__(self, annotation_file):
+        with open(annotation_file, 'r') as f:
+            self.dataset = json.load(f)
+
+        # YOLO class mapping
+        self.yolo_classes = {
+            0: "person", 1: "bicycle", 2: "car", 3: "motorcycle", 4: "airplane",
+            5: "bus", 6: "train", 7: "truck", 8: "boat", 9: "traffic light",
+            10: "fire hydrant", 11: "stop sign", 12: "parking meter", 13: "bench",
+            14: "bird", 15: "cat", 16: "dog", 17: "horse", 18: "sheep", 19: "cow",
+            20: "elephant", 21: "bear", 22: "zebra", 23: "giraffe", 24: "backpack",
+            25: "umbrella", 26: "handbag", 27: "tie", 28: "suitcase", 29: "frisbee",
+            30: "skis", 31: "snowboard", 32: "sports ball", 33: "kite", 34: "baseball bat",
+            35: "baseball glove", 36: "skateboard", 37: "surfboard", 38: "tennis racket",
+            39: "bottle", 40: "wine glass", 41: "cup", 42: "fork", 43: "knife",
+            44: "spoon", 45: "bowl", 46: "banana", 47: "apple", 48: "sandwich",
+            49: "orange", 50: "brocolli", 51: "carrot", 52: "hot dog", 53: "pizza",
+            54: "donut", 55: "cake", 56: "chair", 57: "couch", 58: "potted plant",
+            59: "bed", 60: "dining table", 61: "toilet", 62: "tv", 63: "laptop",
+            64: "mouse", 65: "remote", 66: "keyboard", 67: "cell phone", 68: "microwave",
+            69: "oven", 70: "toaster", 71: "sink", 72: "refrigerator", 73: "book",
+            74: "clock", 75: "vase", 76: "scissors", 77: "teddy bear", 78: "hair drier",
+            79: "toothbrush"
+        }
+
+        # Create reverse mapping from class name to YOLO index
+        self.yolo_class_to_idx = {v: k for k, v in self.yolo_classes.items()}
+
+        # Create mapping from COCO category ID to YOLO index
+        self.coco_to_yolo = {}
+        for cat in self.dataset['categories']:
+            if cat['name'] in self.yolo_class_to_idx:
+                self.coco_to_yolo[cat['id']] = self.yolo_class_to_idx[cat['name']]
+
+        # Create lookup dictionaries
+        self.images = {img['file_name']: img for img in self.dataset['images']}
+        self.categories = {cat['id']: cat for cat in self.dataset['categories']}
+
+        # Print category mapping for debugging
+        print("\nCategory Mapping (COCO → YOLO):")
+        for coco_id, cat in self.categories.items():
+            yolo_idx = self.coco_to_yolo.get(coco_id, "N/A")
+            print(f"COCO ID: {coco_id:3d}, Name: {cat['name']:20s} → YOLO idx: {yolo_idx}")
+
+        # Create ground truth annotations index
+        self.gt_annotations = defaultdict(list)
+        for ann in self.dataset['annotations']:
+            img_id = ann['image_id']
+            self.gt_annotations[img_id].append(ann)
+
+        # Print annotation statistics
+        print(f"\nTotal images in annotations: {len(self.images)}")
+        print(f"Total categories: {len(self.categories)}")
+        print(f"Total annotations: {len(self.dataset['annotations'])}")
+        print(f"Mapped YOLO categories: {len(self.coco_to_yolo)}")
+
+    def evaluate(self, predictions, image_files, input_size):
+        """
+        Evaluate predictions against ground truth annotations
+        """
+        metric = MeanAveragePrecision(box_format='xywh',max_detection_thresholds=[1,10,100])
+
+        # Debug counters
+
+        for img_idx, (image_file, pred) in enumerate(zip(image_files, predictions)):
+            if image_file not in self.images:
+                print(f"\nWarning: Image {image_file} not found in annotations")
+                continue
+
+            img_info = self.images[image_file]
+            img_id = img_info['id']
+
+            # Get original image dimensions for scaling
+            orig_h, orig_w = img_info['height'], img_info['width']
+            scale_w = orig_w / input_size
+            scale_h = orig_h / input_size
+
+
+            if pred is None or len(pred) == 0:
+                continue
+
+            pred_boxes = []
+            pred_scores = []
+            pred_labels = []
+
+            for p_idx, p in enumerate(pred):
+                x1, y1, x2, y2, conf, cls = p.tolist()
+                # Scale coordinates back to original image size
+                x1 *= scale_w
+                x2 *= scale_w
+                y1 *= scale_h
+                y2 *= scale_h
+
+                # Convert to [x, y, w, h] format
+                width = x2 - x1
+                height = y2 - y1
+
+                pred_boxes.append([x1, y1, width, height])
+                pred_scores.append(conf)
+                pred_labels.append(int(cls))
+
+
+            # Get ground truth boxes
+            gt_boxes = []
+            gt_labels = []
+
+            gt_anns = self.gt_annotations[img_id]
+
+
+            for ann_idx, ann in enumerate(gt_anns):
+                coco_category_id = ann['category_id']
+                if coco_category_id not in self.coco_to_yolo:
+                    continue
+
+                yolo_class_idx = self.coco_to_yolo[coco_category_id]
+                gt_boxes.append(ann['bbox'])
+                gt_labels.append(yolo_class_idx)
+
+            if len(pred_boxes) > 0 and len(gt_boxes) > 0:
+                metric.update(
+                    preds=[{
+                        'boxes': torch.tensor(pred_boxes),
+                        'scores': torch.tensor(pred_scores),
+                        'labels': torch.tensor(pred_labels),
+                    }],
+                    target=[{
+                        'boxes': torch.tensor(gt_boxes),
+                        'labels': torch.tensor(gt_labels),
+                    }]
+                )
+
+        # Print summary statistics
+        #print("\nEvaluation Summary:")
+        #print(f"Processed images: {processed_images}")
+        #print(f"Images with predictions: {images_with_predictions}")
+        #print(f"Images with ground truth: {images_with_gt}")
+        #print(f"Images with both pred & GT: {images_with_both}")
+        #print(f"Total predictions: {total_predictions}")
+        #print(f"Total GT boxes: {total_gt_boxes}")
+        #print(f"Skipped GT boxes (unmapped categories): {skipped_gt_boxes}")
+        #print(f"Average predictions per image: {total_predictions/processed_images:.2f}")
+        #print(f"Average GT boxes per image: {total_gt_boxes/processed_images:.2f}")
+
+        #print("\nPredicted Class Distribution:")
+        #for cls_id, count in sorted(class_distribution.items()):
+        #    if cls_id in self.yolo_classes:
+        #        print(f"Class {cls_id} ({self.yolo_classes[cls_id]}): {count}")
+        #    else:
+        #        print(f"Class {cls_id} (unknown): {count}")
+
+        metrics = metric.compute()
+        print("\nMetrics:")
+        from pprint import pprint
+        pprint(metrics)
+
+        return metrics['map_50'], metrics['map']
+
+def calculate_precision(predictions, coco_evaluator, image_files, input_size):
+    """Wrapper function to maintain compatibility with existing code"""
+    return coco_evaluator.evaluate(predictions, image_files, input_size)
 
 def inference_ultralytics(model, dataloader):
     def model_func(batch):
         return model.model(batch)
-    
+
     return run_inference(model_func, dataloader)
 
 def inference_onnx(onnx_path, dataloader):
@@ -98,7 +256,7 @@ def inference_onnx(onnx_path, dataloader):
 
     def model_func(batch):
         return session.run(None, {input_name: batch.numpy()})
-    
+
     return run_inference(model_func, dataloader)
 
 
@@ -120,113 +278,6 @@ def write_results_to_csv(results, filename='yolo_precision_results.csv'):
                     'mAP@0.5:0.95': f'{model_results[4]:.4f}'
                 })
 
-def calculate_precision(predictions, coco_gt, image_ids, input_size):
-    coco_dt = COCO()
-    
-    # Initialize with same categories as ground truth
-    coco_dt.dataset = {
-        'images': [],
-        'categories': coco_gt.dataset['categories'],
-        'annotations': []
-    }
-    
-    # Debug info
-    print(f"Processing {len(predictions)} predictions")
-    total_detections = 0
-    
-    ann_id = 1
-    for i, pred in enumerate(predictions):
-        if pred is None or len(pred) == 0:
-            continue
-            
-        image_id = int(image_ids[i].split('.')[0])
-        
-        # Get original image dimensions from COCO GT
-        img_info = next((img for img in coco_gt.dataset['images'] if img['id'] == image_id), None)
-        if img_info is None:
-            continue
-            
-        orig_width = img_info['width']
-        orig_height = img_info['height']
-        
-        # Scale factors to convert normalized coordinates back to original image size
-        scale_x = orig_width / input_size
-        scale_y = orig_height / input_size
-        
-        for *box, conf, cls in pred:
-            if conf < 0.001:  # Skip very low confidence predictions
-                continue
-                
-            # YOLO format is [x_center, y_center, width, height] normalized
-            x_center, y_center, width, height = [float(coord) for coord in box]
-            
-            # Scale back to original image size
-            x_center *= scale_x
-            y_center *= scale_y
-            width *= scale_x
-            height *= scale_y
-            
-            # Convert to COCO format [x_min, y_min, width, height]
-            x_min = x_center - width / 2
-            y_min = y_center - height / 2
-            
-            # Skip invalid boxes
-            if width <= 0 or height <= 0:
-                continue
-                
-            ann = {
-                'image_id': image_id,
-                'category_id': int(cls) + 1,  # COCO categories start from 1
-                'bbox': [x_min, y_min, width, height],  # COCO format
-                'score': float(conf),
-                'area': float(width * height),
-                'iscrowd': 0,
-                'id': ann_id
-            }
-            coco_dt.dataset['annotations'].append(ann)
-            ann_id += 1
-            total_detections += 1
-            
-            # Debug first few predictions
-            if total_detections <= 5:
-                print(f"\nPrediction {total_detections}:")
-                print(f"Original YOLO: center=({x_center}, {y_center}), size=({width}, {height})")
-                print(f"COCO format: bbox=({x_min}, {y_min}, {width}, {height})")
-                print(f"Confidence: {conf:.3f}, Class: {int(cls)}")
-        
-        # Add image info
-        if not any(img['id'] == image_id for img in coco_dt.dataset['images']):
-            coco_dt.dataset['images'].append({
-                'id': image_id,
-                'file_name': image_ids[i],
-                'height': orig_height,
-                'width': orig_width
-            })
-    
-    print(f"\nTotal detections processed: {total_detections}")
-    print(f"Number of images with detections: {len(coco_dt.dataset['images'])}")
-    
-    if total_detections == 0:
-        print("WARNING: No valid detections found!")
-        return 0.0, 0.0
-    
-    # Create index for evaluation
-    coco_dt.createIndex()
-    
-    # Initialize COCO evaluator
-    coco_eval = COCOeval(coco_gt, coco_dt, 'bbox')
-    coco_eval.params.imgIds = [int(img_id.split('.')[0]) for img_id in image_ids]
-    
-    # Run evaluation
-    try:
-        coco_eval.evaluate()
-        coco_eval.accumulate()
-        coco_eval.summarize()
-    except Exception as e:
-        print(f"Error during COCO evaluation: {str(e)}")
-        return 0.0, 0.0
-
-    return coco_eval.stats[1], coco_eval.stats[0]  # mAP@0.5, mAP@0.5:0.95
 
 def run_inference(model_func, dataloader):
     inference_times = []
@@ -234,10 +285,10 @@ def run_inference(model_func, dataloader):
     preprocess_times = []
     all_predictions = []
     image_files = []
-    
+
     for batch, filenames, prep_times in tqdm(dataloader, desc="Running inference"):
         preprocess_times.extend(prep_times.tolist())
-        
+
         # Inference
         start_time = time.perf_counter()
         pred = model_func(batch)
@@ -246,36 +297,19 @@ def run_inference(model_func, dataloader):
         # Post-processing
         start_time = time.perf_counter()
         # Note: non_max_suppression expects and returns boxes in [x1, y1, x2, y2] format
-        processed_pred = non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred)
+        processed_pred = non_max_suppression(torch.tensor(pred[0]) if not isinstance(pred, torch.Tensor) else pred,0.001,0.7)
 
-        # Convert [x1, y1, x2, y2] to [x_center, y_center, width, height]
-        converted_pred = []
-        for img_pred in processed_pred:
-            if img_pred is None or len(img_pred) == 0:
-                converted_pred.append(img_pred)
-                continue
-                
-            img_converted = []
-            for *xyxy, conf, cls in img_pred:
-                x1, y1, x2, y2 = [float(coord) for coord in xyxy]
-                # Convert to center format
-                x_center = (x1 + x2) / 2
-                y_center = (y1 + y2) / 2
-                width = x2 - x1
-                height = y2 - y1
-                img_converted.append([x_center, y_center, width, height, conf, cls])
-            converted_pred.append(torch.tensor(img_converted) if len(img_converted) > 0 else None)
-        
+
         end_time = time.perf_counter()
         post_processing_times.append(end_time - start_time)
-        
-        all_predictions.extend(converted_pred)
+
+        all_predictions.extend(processed_pred)
         image_files.extend(filenames)
-    
+
     avg_preprocess_time = mean(preprocess_times)
     avg_inference_time = mean(inference_times)
     avg_post_processing_time = mean(post_processing_times)
-    
+
     return avg_preprocess_time, avg_inference_time, avg_post_processing_time, all_predictions, image_files
 
 
@@ -290,34 +324,27 @@ def print_prediction_summary(predictions, image_ids):
 def run_comparisons(input_size, model_type):
     print(f"\nRunning comparisons for {input_size}x{input_size} images:")
 
-    # Load COCO annotations
-    coco_gt = COCO('./datasets/coco/labels/annotations/instances_val2017.json')
-    
-    # Create dataset and dataloader
+    # Initialize evaluator with COCO annotations
+    coco_evaluator = COCOEvaluator('./datasets/coco/labels/annotations/instances_val2017.json')
+
+    # Rest of the function remains the same...
     dataset = COCODataset('./datasets/coco/images/val2017', input_size)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
-    # Initialize models
     ultralytics_model = YOLO(f'{model_type}.pt')
     ultralytics_model.fuse()
 
     ultralytics_model.export(format="onnx", batch=batch_size,
                            imgsz=input_size, simplify=True, opset=13)
-    
-    # Run inferences
+
     ultralytics_results = inference_ultralytics(ultralytics_model, dataloader)
-    
-    # Debug: Print prediction summary
-    print_prediction_summary(ultralytics_results[3], ultralytics_results[4])
-    
-    # Calculate precision
     ultralytics_map50, ultralytics_map = calculate_precision(
-        ultralytics_results[3], coco_gt, ultralytics_results[4], input_size)
-        
+        ultralytics_results[3], coco_evaluator, ultralytics_results[4], input_size)
+
     ultralytics_onnx_results = inference_onnx(f'./{model_type}.onnx', dataloader)
     ultralytics_onnx_map50, ultralytics_onnx_map = calculate_precision(
-        ultralytics_onnx_results[3], coco_gt, ultralytics_onnx_results[4], input_size)
-    
+        ultralytics_onnx_results[3], coco_evaluator, ultralytics_onnx_results[4], input_size)
+
     del ultralytics_model
     gc.collect()
 
@@ -328,7 +355,7 @@ def run_comparisons(input_size, model_type):
 
 def main():
     sizes = [640]
-    models = ['yolov8n', 'yolov5n6u']
+    models = ['yolov5n6u', 'yolov8n', 'yolov9t','yolov10n', 'yolo11n']
     results = {}
     for model in models:
         for size in sizes:
