@@ -143,7 +143,7 @@ class COCOEvaluator:
         """
         Evaluate predictions against ground truth annotations
         """
-        metric = MeanAveragePrecision(box_format='xywh',max_detection_thresholds=[1,10,100])
+        metric = MeanAveragePrecision(box_format='xywh')
 
         # Debug counters
 
@@ -202,6 +202,7 @@ class COCOEvaluator:
                 gt_labels.append(yolo_class_idx)
 
             if len(pred_boxes) > 0 and len(gt_boxes) > 0:
+                
                 metric.update(
                     preds=[{
                         'boxes': torch.tensor(pred_boxes),
